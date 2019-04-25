@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 def parse_data(filename):
     with open(filename) as f:
         lines = f.readlines()
