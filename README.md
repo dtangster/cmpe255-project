@@ -10,3 +10,9 @@ Group members:  Yang Chen, Fulbert Jong, David Tang
 ## Running the project
 
 `docker-compose up --build`
+
+
+## Errors
+
+1. ERROR: Couldn't connect to Docker daemon - you might need to run `docker-machine start default`.
+`$newgrp docker`
