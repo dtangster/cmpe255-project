@@ -1,3 +1,9 @@
+import keras
+import numpy
+import pandas
+import scipy
+
+
 def parse_data(filename):
     with open(filename) as f:
         lines = f.readlines()
