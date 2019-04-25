@@ -14,5 +14,5 @@ Group members:  Yang Chen, Fulbert Jong, David Tang
 
 ## Errors
 
-1. ERROR: Couldn't connect to Docker daemon - you might need to run `docker-machine start default`.
+1. ERROR: Couldn't connect to Docker daemon - you might need to run `docker-machine start default`.  
 `$newgrp docker`
