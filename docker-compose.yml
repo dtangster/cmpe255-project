@@ -1,0 +1,7 @@
+version: '3'
+services:
+  project:
+    image: 'cmpe255-project'
+    build:
+      context: .
+      dockerfile: Dockerfile
