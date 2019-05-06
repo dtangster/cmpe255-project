@@ -10,36 +10,53 @@ import scipy
 import tensorflow
 
 
+CATEGORY_ENCODING = {
+    'normal': 0,
+    'dos': 1,
+    'probe': 2,
+    'r2l': 3,
+    'u2r': 4,
+}
+
+
 def parse_attack_types(filename):
     """
-    Generate mapping that looks like:
+    Generate twp mappings:
+
+    1. category => set(attack_types)
 
     {
-        'dos': {
-            'value': 0
-            'attacks': {'teardrop', 'smurf', 'land', 'neptune', 'pod', 'back'}
-        },
-        'r2l': ..
+        'dos': {'teardrop', 'smurf', 'land', 'neptune', 'pod', 'back'},
+        'r2l': { ... },
     }
 
-    The 'value' becomes important in some learning algorithms. We have to encode text
+    2. attack_types => integer
+
+    {
+        'teardrop': 0,
+        'smurf': 1,
+        ...
+    }
+
+    The integers becomes important in some learning algorithms. We have to encode text
     into numbers so some algorithms can process them.
     """
     attack_map = {}
+    attack_encoding = {}
     count = 0
     with open(filename) as f:
         lines = f.readlines()
     for line in lines:
         attack, category = line.split()
         if category in attack_map:
-            attack_map[category]['attacks'].add(attack)
+            attack_map[category].add(attack)
         else:
-            attack_map[category] = {
-                'value': count,
-                'attacks': {attack}
-            }
+            attack_map[category] = {attack}
+        if attack not in attack_encoding:
+            attack_encoding[attack] = count
             count += 1
-    return attack_map
+
+    return attack_map, attack_encoding
 
 
 def parse_data(filename):
@@ -76,8 +93,11 @@ def neural_networks_train(train_data):
 
 if __name__ == '__main__':
     print('Running project')
-    attack_map = parse_attack_types('./dataset/attack_types.txt')
+    attack_map, attack_encoding = parse_attack_types('./dataset/attack_types.txt')
+    print('Attack mapping:')
     print(attack_map)
+    print('Attack encoding:')
+    print(attack_encoding)
     train_data = parse_data('./dataset/kddcup.data_10_percent')
     print(train_data[:2])
     #neural_networks_train(train_data)
