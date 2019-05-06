@@ -1,5 +1,7 @@
 keras
 numpy
 pandas
+scapy
 scipy
 scikit-learn
+tensorflow

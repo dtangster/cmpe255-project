@@ -1,6 +1,8 @@
+import keras
 import numpy
 import pandas
 import scipy
+import tensorflow
 
 
 def parse_data(filename):
