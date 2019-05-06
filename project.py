@@ -12,11 +12,11 @@ def parse_attack_types(filename):
     with open(filename) as f:
         lines = f.readlines()
     for line in lines:
-        attack, attack_type = line.split()
-        if attack_type in attack_map:
-            attack_map[attack_type].add(attack)
+        attack, category = line.split()
+        if category in attack_map:
+            attack_map[category].add(attack)
         else:
-            attack_map[attack_type] = {attack}
+            attack_map[category] = {attack}
     return attack_map
 
 
