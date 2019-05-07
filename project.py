@@ -10,16 +10,6 @@ import scipy
 import tensorflow
 
 
-# Not sure if we need this yet.
-CATEGORY_ENCODING = {
-    'normal': 0,
-    'dos': 1,
-    'probe': 2,
-    'r2l': 3,
-    'u2r': 4,
-}
-
-
 def parse_attack_types(filename):
     """
     Generate a mapping that looks like:
@@ -55,6 +45,25 @@ def parse_attack_types(filename):
     return attack_map
 
 
+def encode_data(train_data, cols=(1, 2, 3, 41)):
+    """
+    Encode any strings in the training data so that they are integers.
+    Also return a list of map encodings.
+    """
+    encodings = {}
+    for col in cols:
+        unique_values = train_data[col].unique()
+        mapping = {}
+        reverse_mapping = {}  # Used for lookup later if we need it
+        for j, value in enumerate(unique_values):
+            mapping[value] = j
+            reverse_mapping[j] = value
+        # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+        train_data[col] = train_data[col].map(mapping)
+        encodings[col] = reverse_mapping
+    return encodings
+
+
 def parse_data(filename):
     return pd.read_csv(filename, header=None)
 
@@ -63,13 +72,10 @@ def neural_networks_train(train_data):
     train_X = train_data.drop(columns=[41])
     train_y = train_data[[41]]
 
-    t = Tokenizer()
-    t.fit_on_texts(train_X)
-    train_X = t.texts_to_matrix(train_X, mode='count')
-
-    t2 = Tokenizer()
-    t2.fit_on_texts(train_y)
-    train_y = t2.texts_to_matrix(train_y, mode='count')
+    print("Neural networks train_X: ")
+    print(train_X)
+    print("Neural networks train_y: ")
+    print(train_y)
 
     # Create model
     model = Sequential()
@@ -93,5 +99,11 @@ if __name__ == '__main__':
     print('Attack mapping:')
     print(attack_map)
     train_data = parse_data('./dataset/kddcup.data_10_percent')
+    print('Raw data:')
     print(train_data[:2])
-    #neural_networks_train(train_data)
+    encodings = encode_data(train_data)
+    print('Encoded data:')
+    print(train_data[:2])
+    print('Encodings:')
+    print(encodings)
+    neural_networks_train(train_data)
