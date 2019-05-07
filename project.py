@@ -45,23 +45,38 @@ def parse_attack_types(filename):
     return attack_map
 
 
-def encode_data(train_data, cols=(1, 2, 3, 41)):
+def encode_data(train_data, cols, encodings=None):
     """
     Encode any strings in the training data so that they are integers.
-    Also return the map of encodings.
+    Also return the map of `encodings` and `decodings`.
+
+    Plan of use:
+
+    1. Pass the training matrix in here without providing encodings.
+       The caller should save the `encodings` and `decodings`.
+    2. When you need to encode your test data, make sure to pass in
+       the `encodings` generated from step 1 so that we encode the
+       test data the same way.
     """
-    encodings = {}
-    for col in cols:
-        unique_values = train_data[col].unique()
-        mapping = {}
-        reverse_mapping = {}  # Used for lookup later if we need it
-        for j, value in enumerate(unique_values):
-            mapping[value] = j
-            reverse_mapping[j] = value
-        # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
-        train_data[col] = train_data[col].map(mapping)
-        encodings[col] = reverse_mapping
-    return encodings
+    if not encodings:
+        encodings = {}
+        decodings = {}
+        for col in cols:
+            unique_values = train_data[col].unique()
+            encoding = {}
+            decoding = {}  # Used for lookup later if we need it
+            for j, value in enumerate(unique_values):
+                encoding[value] = j
+                decoding[j] = value
+            # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+            train_data[col] = train_data[col].map(encoding)
+            encodings[col] = encoding
+            decodings[col] = decoding
+    else:
+        decodings = None
+        for col in cols:
+            train_data[col] = train_data[col].map(encodings[col])
+    return encodings, decodings
 
 
 def parse_data(filename):
@@ -127,12 +142,14 @@ if __name__ == '__main__':
     attack_map = parse_attack_types('./dataset/attack_types.txt')
     print('Attack mapping:')
     print(attack_map)
-    train_data = parse_data('./dataset/kddcup.data_10_percent')
+    train_data = parse_data('./dataset/kddcup.data')
     print('Raw data:')
     print(train_data[:2])
-    encodings = encode_data(train_data)
+    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41))
     print('Encoded data:')
     print(train_data[:2])
     print('Encodings:')
     print(encodings)
-    #model = neural_networks_train(train_data)
+    #model = neural_networks_train(train_data, cols=(1, 2, 3, 41))
+    test_data = parse_data('./dataset/kddcup.testdata.unlabeled')
+    encode_data(test_data, cols=(1, 2, 3), encodings=encodings)
