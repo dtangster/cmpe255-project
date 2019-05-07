@@ -48,7 +48,7 @@ def parse_attack_types(filename):
 def encode_data(train_data, cols=(1, 2, 3, 41)):
     """
     Encode any strings in the training data so that they are integers.
-    Also return a list of map encodings.
+    Also return the map of encodings.
     """
     encodings = {}
     for col in cols:
