@@ -91,9 +91,38 @@ def neural_networks_train(train_data):
     early_stopping_monitor = EarlyStopping(patience=3)
     # Train model
     model.fit(train_X, train_y, validation_split=0.2, epochs=30, callbacks=[early_stopping_monitor])
+    return model
 
 
 if __name__ == '__main__':
+    """
+    Whoever is working on their local branch should probably comment out other people's
+    training since you don't want to run them. I will also comment my own when I check
+    in my stuff.
+
+    For faster development I usually keep running under the same Docker container. I do
+    this by modifying the Dockerfile so that the ENTRYPOINT looks like:
+
+    ENTRYPOINT ["sleep", "infinity"]
+
+    This basically keeps the container up and running. You can go inside the container
+    as if you were SSHing into a remote host and run the application manually. You can
+    do this by running:
+
+    docker ps   # Note down the CONTAINER ID
+    docker exec -it <CONTAINER_ID> bash
+
+    This will bring to a bash prompt inside the container. The container doesn't have
+    many packages. I use vim for editing the source file so consider running:
+
+    apt-get update
+    apt-get install vim
+
+    Now you can go to /opt/project and:
+
+    1. Modify the source code
+    2. Run it all inside the container
+    """
     print('Running project')
     attack_map = parse_attack_types('./dataset/attack_types.txt')
     print('Attack mapping:')
@@ -106,4 +135,4 @@ if __name__ == '__main__':
     print(train_data[:2])
     print('Encodings:')
     print(encodings)
-    neural_networks_train(train_data)
+    #model = neural_networks_train(train_data)
