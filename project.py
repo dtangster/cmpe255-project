@@ -15,37 +15,26 @@ def parse_attack_types(filename):
     Generate a mapping that looks like:
 
     {
-        'teardrop': {
-            'encoding': 0,
-            'category': 'dos'
-        },
-        'smurf': {
-            'encoding': 1,
-            'category': 'dos'
-        },
-        ...
+        'dos': set(['teardrop.', 'smurf.']),
+        'r2l': ...
     }
 
-    The 'encoding' becomes important in some learning algorithms. We have to encode text
-    into numbers so some algorithms can process them.
+    This will be used to further encode the training data because we want to reduce
+    the labels to 0-4.
     """
     attack_map = {}
-    attack_encoding = {}
-    count = 0
     with open(filename) as f:
         lines = f.readlines()
     for line in lines:
         attack, category = line.split()
-        if attack not in attack_map:
-            attack_map[attack] = {
-                'encoding': count,
-                'category': category
-            }
-            count += 1
+        if category not in attack_map:
+            attack_map[category] = {attack + '.'}
+        else:
+            attack_map[category].add(attack + '.')
     return attack_map
 
 
-def encode_data(train_data, cols, encodings=None):
+def encode_data(train_data, cols, attack_map=None, encodings=None):
     """
     Encode any strings in the training data so that they are integers.
     Also return the map of `encodings` and `decodings`.
@@ -65,9 +54,35 @@ def encode_data(train_data, cols, encodings=None):
             unique_values = train_data[col].unique()
             encoding = {}
             decoding = {}  # Used for lookup later if we need it
-            for j, value in enumerate(unique_values):
-                encoding[value] = j
-                decoding[j] = value
+            for i, attack in enumerate(unique_values):
+                encoding[attack] = i
+                decoding[i] = attack
+            if col == 41:  # This is the label. We want to reduce our classes to be 0-4
+                aux_encoding = {}
+                new_encoding = {}
+                new_decoding = {}
+                for attack, value in encoding.items():
+                    j = 0
+                    for category, attacks in attack_map.items():
+                        if attack in attacks:
+                            # Add 1 because 0 is reserved for normal traffic
+                            aux_encoding[attack] = j + 1
+                            new_encoding[category] = j + 1
+                            new_decoding[j] = category
+                            break
+                        j += 1
+                    else:
+                        # A for-else clause means that this block will only run
+                        # if we didn't encounter a break and loop finished normally.
+                        # This is normal traffic because attack_map doesn't contain
+                        # normal traffic data.
+                        aux_encoding[attack] = 0
+                        new_encoding[attack] = 0
+                        new_decoding[0] = attack
+                # The new encodings for the labels basically become something like:
+                # {'normal': 0, 'dos': 1, 'u2r': 3, 'r2l': 3, 'probe': 4}
+                encoding = new_encoding
+                decoding = new_decoding
             # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
             train_data[col] = train_data[col].map(encoding)
             encodings[col] = encoding
@@ -86,12 +101,10 @@ def parse_data(filename):
 def neural_networks_train(train_data):
     train_X = train_data.drop(columns=[41])
     train_y = train_data[[41]]
-
     print("Neural networks train_X: ")
     print(train_X)
     print("Neural networks train_y: ")
     print(train_y)
-
     # Create model
     model = Sequential()
     # Get number of columns in training data
@@ -145,11 +158,15 @@ if __name__ == '__main__':
     train_data = parse_data('./dataset/kddcup.data')
     print('Raw data:')
     print(train_data[:2])
-    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41))
+    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41), attack_map=attack_map)
     print('Encoded data:')
     print(train_data[:2])
     print('Encodings:')
     print(encodings)
-    #model = neural_networks_train(train_data, cols=(1, 2, 3, 41))
+    print('Decodings:')
+    print(decodings)
+    model = neural_networks_train(train_data)
+    model.save('keras.model')
     test_data = parse_data('./dataset/kddcup.testdata.unlabeled')
     encode_data(test_data, cols=(1, 2, 3), encodings=encodings)
+    results = model.fit(test_data)
