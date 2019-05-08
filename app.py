@@ -6,6 +6,7 @@ import json
 from flask import request, send_from_directory, Flask
 from keras.models import load_model
 import pandas as pd
+import pickle
 
 from project import encode_data
 
@@ -17,7 +18,8 @@ with open('encoding.json') as f:
     encodings[3] = encodings['3']
     encodings[41] = encodings['41']
 
-model = load_model('keras.model')
+#model = load_model('keras.model')
+model = pickle.load(open("DT_model.pkl","rb"))
 app = Flask(__name__)
 
 @app.route('/')
@@ -41,7 +43,8 @@ def test_packet():
     print("CSV ", data)
     encode_data(data, cols=(1, 2, 3), encodings=encodings)
     print("Successful encoded data ", data)
-    prediction = model.predict_classes(data)
+    #prediction = model.predict_classes(data)
+    prediction = model.predict(data)
     print(prediction)
     print("Incoming packet: ", data)
 
