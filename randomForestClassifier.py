@@ -8,8 +8,8 @@ from sklearn.metrics import confusion_matrix, zero_one_loss
 from sklearn.model_selection import train_test_split
 
 # Must declare data_dir as the directory of training and test files
-#data_dir="./datasets/KDD-CUP-99/"
-data_dir="./"
+#data_dir="./dataset/KDD-CUP-99/"
+data_dir="./dataset/"
 raw_data_filename = data_dir + "kddcup.data.corrected"
 #raw_data_filename = data_dir + "kddcup.data_10_percent_corrected"
 
@@ -36,11 +36,11 @@ labels= labels.values.ravel() # this becomes a 'horizontal' array
 # TODO: get features names and target name
 
 # Separate data in train set and test set
-df= pd.DataFrame(features)
+dataFrame= pd.DataFrame(features)
 # create training and testing vars
 # Note: train_size + test_size < 1.0 means we are subsampling
 # Use small numbers for slow classifiers, as KNN, Radius, SVC,...
-X_train, X_test, y_train, y_test = train_test_split(df, labels, train_size=0.8, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(dataFrame, labels, train_size=0.8, test_size=0.2)
 print ("X_train, y_train:", X_train.shape, y_train.shape)
 print ("X_test, y_test:", X_test.shape, y_test.shape)
 
