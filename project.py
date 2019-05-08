@@ -7,10 +7,9 @@ from keras.preprocessing.text import Tokenizer
 import numpy as np
 import pandas as pd
 import scipy
+from sklearn.model_selection import train_test_split
 import tensorflow
 
-
-np.random.seed(255)
 
 CLASS_MAPPING = {
     'normal': 0,
@@ -99,13 +98,7 @@ def parse_data(filename):
     return pd.read_csv(filename, header=None)
 
 
-def neural_networks_train(train_data):
-    train_X = train_data.drop(columns=[41])
-    train_y = train_data[[41]]
-    print("Neural networks train_X: ")
-    print(train_X)
-    print("Neural networks train_y: ")
-    print(train_y)
+def neural_networks_train(train_X, train_y):
     # Create model
     model = Sequential()
     # Get number of columns in training data
@@ -156,22 +149,18 @@ if __name__ == '__main__':
     attack_map = parse_attack_types('./dataset/attack_types.txt')
     print('Attack mapping:')
     print(attack_map)
-    train_data = parse_data('./dataset/kddcup.data_10_percent')
-    print('Raw data:')
-    print(train_data[:2])
-    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41), attack_map=attack_map)
+    data = parse_data('./dataset/kddcup.data_10_percent')
+    encodings, decodings = encode_data(data, cols=(1, 2, 3, 41), attack_map=attack_map)
+    x = data.drop(columns=[41])
+    y = data[41]
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=15)
     print('Encoded data:')
-    print(train_data[:2])
+    print(x_train[:2])
     print('Encodings:')
     print(encodings)
     print('Decodings:')
     print(decodings)
-    print("Looking for NaN in training data")
-    print(train_data.isnull().values.any())
-    model = neural_networks_train(train_data)
+    model = neural_networks_train(x_train, y_train)
     model.save('keras.model')
-    test_data = parse_data('./dataset/kddcup.testdata.unlabeled_10_percent')
-    encode_data(test_data, cols=(1, 2, 3), attack_map=attack_map)
-    print("Looking for NaN in testing data")
-    print(test_data.isnull().values.any())
-    results = model.fit(test_data)
+    predictions = model.predict_classes(x_test)
+    print(predictions)
