@@ -14,14 +14,24 @@
 	<form id="formData">
        Packet: <input type="text" name="packet" size=200><br>
 	   <button id="submitButton">Send</button>
+	   Results: <span id="results"></span>
     </form>
 	<script>
-        $("#submitButton").click(function() {
-		  console.log('clicked');
-          $.post("/test_packet", $("#formData").serialize(), function(result) {
-            console.log("Replied with ", result)
-          });
+    $("#submitButton").click(function() {
+	  $('#formData').submit(function(event) {
+        event.preventDefault();
+
+        $.ajax({
+          url: "/test_packet",
+          type: 'POST',
+          data: $(this).serialize(),
+          success: function(data) {
+			console.log(data.class);
+			document.getElementById("results").innerText = data.class;
+          }
         });
+      });
+    });
     </script>
   </body>
 </html>

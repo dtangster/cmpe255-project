@@ -45,8 +45,12 @@ def test_packet():
     print("Successful encoded data ", data)
     #prediction = model.predict_classes(data)
     prediction = model.predict(data)
-    print(prediction)
-    print("Incoming packet: ", data)
+    print("Prediction: ", prediction)
+    response_data = {"class": prediction[0]}  # We are only sending one packet at a time from the UI
+    response = app.response_class(response=json.dumps(response_data),
+                                  status=200,
+                                  mimetype='application/json')
+    return response
 
 
 app.run(host='0.0.0.0')
