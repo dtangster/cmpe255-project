@@ -4,55 +4,60 @@ from keras.callbacks import EarlyStopping
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.preprocessing.text import Tokenizer
-import numpy
+import numpy as np
 import pandas as pd
 import scipy
 import tensorflow
 
+
+np.random.seed(255)
+
+CLASS_MAPPING = {
+    'normal': 0,
+    'dos': 1,
+    'probe': 2,
+    'r2l': 3,
+    'u2r': 4
+}
+
+CLASS_MAPPING_REVERSE = {
+    0: 'normal',
+    1: 'dos',
+    2: 'probe',
+    3: 'r2l',
+    4: 'u2r'
+}
 
 def parse_attack_types(filename):
     """
     Generate a mapping that looks like:
 
     {
-        'teardrop': {
-            'encoding': 0,
-            'category': 'dos'
-        },
-        'smurf': {
-            'encoding': 1,
-            'category': 'dos'
-        },
+        'teardrop.': 'dos',
+        'smurf.': 'dos',
         ...
     }
 
-    The 'encoding' becomes important in some learning algorithms. We have to encode text
-    into numbers so some algorithms can process them.
+    This will be used to further encode the training data because we want to reduce
+    the labels to 0-4.
     """
     attack_map = {}
-    attack_encoding = {}
-    count = 0
     with open(filename) as f:
         lines = f.readlines()
     for line in lines:
         attack, category = line.split()
-        if attack not in attack_map:
-            attack_map[attack] = {
-                'encoding': count,
-                'category': category
-            }
-            count += 1
+        attack_map[attack + '.'] = category
     return attack_map
 
 
-def encode_data(train_data, cols, encodings=None):
+def encode_data(train_data, cols, attack_map=None, encodings=None):
     """
     Encode any strings in the training data so that they are integers.
     Also return the map of `encodings` and `decodings`.
 
     Plan of use:
 
-    1. Pass the training matrix in here without providing encodings.
+    1. Pass the training matrix in here without providing 'encodings'.
        The caller should save the `encodings` and `decodings`.
     2. When you need to encode your test data, make sure to pass in
        the `encodings` generated from step 1 so that we encode the
@@ -65,13 +70,24 @@ def encode_data(train_data, cols, encodings=None):
             unique_values = train_data[col].unique()
             encoding = {}
             decoding = {}  # Used for lookup later if we need it
-            for j, value in enumerate(unique_values):
-                encoding[value] = j
-                decoding[j] = value
-            # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
-            train_data[col] = train_data[col].map(encoding)
-            encodings[col] = encoding
-            decodings[col] = decoding
+            if col != 41:
+                for i, attack in enumerate(unique_values):
+                    encoding[attack] = i
+                    decoding[i] = attack
+                # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+                train_data[col] = train_data[col].map(encoding)
+                encodings[col] = encoding
+                decodings[col] = decoding
+            else:
+                # This is the label. We want to reduce our classes to be 0-4
+                for attack in unique_values:
+                    encoding[attack] = CLASS_MAPPING[attack_map.get(attack, 'normal')]
+                # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+                train_data[col] = train_data[col].map(encoding)
+                # The new encodings for the labels basically become something like:
+                # {'normal': 0, 'dos': 1, 'u2r': 3, 'r2l': 3, 'probe': 4}
+                encodings[col] = CLASS_MAPPING
+                decodings[col] = CLASS_MAPPING_REVERSE
     else:
         decodings = None
         for col in cols:
@@ -86,12 +102,10 @@ def parse_data(filename):
 def neural_networks_train(train_data):
     train_X = train_data.drop(columns=[41])
     train_y = train_data[[41]]
-
     print("Neural networks train_X: ")
     print(train_X)
     print("Neural networks train_y: ")
     print(train_y)
-
     # Create model
     model = Sequential()
     # Get number of columns in training data
@@ -142,14 +156,22 @@ if __name__ == '__main__':
     attack_map = parse_attack_types('./dataset/attack_types.txt')
     print('Attack mapping:')
     print(attack_map)
-    train_data = parse_data('./dataset/kddcup.data')
+    train_data = parse_data('./dataset/kddcup.data_10_percent')
     print('Raw data:')
     print(train_data[:2])
-    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41))
+    encodings, decodings = encode_data(train_data, cols=(1, 2, 3, 41), attack_map=attack_map)
     print('Encoded data:')
     print(train_data[:2])
     print('Encodings:')
     print(encodings)
-    #model = neural_networks_train(train_data, cols=(1, 2, 3, 41))
-    test_data = parse_data('./dataset/kddcup.testdata.unlabeled')
-    encode_data(test_data, cols=(1, 2, 3), encodings=encodings)
+    print('Decodings:')
+    print(decodings)
+    print("Looking for NaN in training data")
+    print(train_data.isnull().values.any())
+    model = neural_networks_train(train_data)
+    model.save('keras.model')
+    test_data = parse_data('./dataset/kddcup.testdata.unlabeled_10_percent')
+    encode_data(test_data, cols=(1, 2, 3), attack_map=attack_map)
+    print("Looking for NaN in testing data")
+    print(test_data.isnull().values.any())
+    results = model.fit(test_data)
