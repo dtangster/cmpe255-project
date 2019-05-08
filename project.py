@@ -28,9 +28,9 @@ def parse_attack_types(filename):
     for line in lines:
         attack, category = line.split()
         if category not in attack_map:
-            attack_map[category] = {attack + '.'}
+            attack_map[category + '.'] = {attack + '.'}
         else:
-            attack_map[category].add(attack + '.')
+            attack_map[category + '.'].add(attack + '.')
     return attack_map
 
 
@@ -57,7 +57,11 @@ def encode_data(train_data, cols, attack_map=None, encodings=None):
             for i, attack in enumerate(unique_values):
                 encoding[attack] = i
                 decoding[i] = attack
-            if col == 41:  # This is the label. We want to reduce our classes to be 0-4
+            if col != 41:
+                # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+                train_data[col] = train_data[col].map(encoding).fillna(train_data[col])
+            else:
+                # This is the label. We want to reduce our classes to be 0-4
                 aux_encoding = {}
                 new_encoding = {}
                 new_decoding = {}
@@ -83,8 +87,8 @@ def encode_data(train_data, cols, attack_map=None, encodings=None):
                 # {'normal': 0, 'dos': 1, 'u2r': 3, 'r2l': 3, 'probe': 4}
                 encoding = new_encoding
                 decoding = new_decoding
-            # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
-            train_data[col] = train_data[col].map(encoding)
+                # Encode strings like ('tcp', 'udp', 'icmp') into (0, 1, 2)
+                train_data[col] = train_data[col].map(aux_encoding).fillna(train_data[col])
             encodings[col] = encoding
             decodings[col] = decoding
     else:
@@ -165,6 +169,8 @@ if __name__ == '__main__':
     print(encodings)
     print('Decodings:')
     print(decodings)
+    print("Looking for NaN")
+    print(train_data.isnull().values.any())
     model = neural_networks_train(train_data)
     model.save('keras.model')
     test_data = parse_data('./dataset/kddcup.testdata.unlabeled')
