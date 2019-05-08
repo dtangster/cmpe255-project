@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import scipy
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 import tensorflow
 
 
@@ -109,7 +110,7 @@ def neural_networks_train(train_X, train_y):
     model.add(Dense(10, activation='softmax', input_shape=(n_cols,)))
     model.add(Dense(num_classes, activation='softmax'))
     # Compile model using mse as a measure of model performance
-    model.compile(optimizer='adam', loss='mean_squared_error')
+    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['acc'])
     # Set early stopping monitor so the model stops training when it won't improve anymore
     early_stopping_monitor = EarlyStopping(patience=3)
     # Train model
@@ -123,7 +124,7 @@ if __name__ == '__main__':
     attack_map = parse_attack_types('./dataset/attack_types.txt')
     print('Attack mapping:')
     print(attack_map)
-    data = parse_data('./dataset/kddcup.data')
+    data = parse_data('./dataset/kddcup.data.corrected')
     encodings, decodings = encode_data(data, cols=(1, 2, 3, 41), attack_map=attack_map)
     x = data.drop(columns=[41])
     y = data[41]
@@ -134,12 +135,15 @@ if __name__ == '__main__':
     print(encodings)
     print('Decodings:')
     print(decodings)
-    model = neural_networks_train(x_train, y_train)
-    model.save('keras.model')
+    #model = neural_networks_train(x_train, y_train)
+    #model.save('keras.model')
+    model = load_model('keras.model')
     predictions = model.predict_classes(x_test)
     print(predictions)
     for i in range(5):
         if i in predictions:
             print(f"{i} is in the prediction")
+    print (metrics.classification_report(y_test, predictions))
+    print ("accuracy %s" % metrics.accuracy_score(y_test, predictions))
     #y_test_binary = to_categorical(y_test, 5)
     #model.evaluate(x_test, y_test_binary)
